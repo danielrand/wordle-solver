@@ -1,4 +1,4 @@
-from helpers import get_solution_words, get_additional_words
+from helpers import get_solution_words, get_additional_words, get_input
 import time
 
 solution_words = get_solution_words()
@@ -115,6 +115,43 @@ def go_for_it():
     return solution_words.pop(0)
 
 
+def calculate_points(word):
+    points = 0
+    for i, letter in enumerate(word):
+        for word in solution_words:
+            if word[i] == letter:
+                points += 2
+            elif letter in word:
+                points += 1
+    return points
+
+
+def highest_pointed_guess():
+    """
+        returns word with the highest predicted number of resulting eliminated words
+    """
+    max_points = 0
+    best_guess = ""
+    for word in all_words:
+        skip = False
+        # refer to letter black list in order to not put letter in wrong place more than once
+        for i, letter in enumerate(word):
+            if letter in letter_black_list[i]:
+                skip = True
+                break
+        if skip:
+            continue
+        num_points = calculate_points(word)
+        num_distinct_letters = len(set(word))
+        # apply a penalty for words with repeated letters
+        adjusted_points = (num_distinct_letters / 5) * num_points
+        if adjusted_points > max_points:
+            max_points = adjusted_points
+            best_guess = word
+    all_words.remove(best_guess)
+    return best_guess
+
+
 def best_average_guess(guess_num):
     """
     returns word with the highest predicted number of resulting eliminated words
@@ -160,7 +197,7 @@ guess_total = 0
 loss_total = 0
 results = [list() for i in range(6)]
 # lower num tries to iterate through a subset
-num_tries = 50
+num_tries = 20
 # determined by the algorithm, hardcoded to save time
 starting_word = 'roate'
 # use only possible elimination words on second guess
@@ -183,13 +220,12 @@ for i, solution in enumerate(solution_words[:num_tries]):
         else:
             print('computing best guess...')
             best = True
-            best_guess = best_average_guess(guess_num)
+            best_guess = highest_pointed_guess()
 
         print(f"guess #{guess_num + 1}: ", best_guess)
 
         hints = calculate_hints(best_guess)
         all_hints[best_guess] = hints
-        # guess_num == 1 and best and best_guess != solution and ('a' in best_guess or 'e' in best_guess)
         print("          ", ''.join(hints))
 
         if best_guess == solution:
